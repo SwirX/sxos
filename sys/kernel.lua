@@ -55,7 +55,7 @@ log.info("kernel", "Stage 5 complete: user=" .. username)
 -- Stage 6: Build the shell process environment and launch bsh.
 local system_config      = auth.read_config()
 
-local shell_env          = env_lib.create_process_env(_G, {
+local shell_env          = env_lib.create_process_env(_ENV, {
     PATH     = "/bin:/usr/bin",
     HOME     = userinfo.home,
     USER     = username,
