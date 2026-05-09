@@ -7,7 +7,7 @@ A UNIX-like operating system for [ComputerCraft: Tweaked](https://tweaked.cc/).
 Run this inside any ComputerCraft computer with HTTP access:
 
 ```lua
-wget run https://raw.githubusercontent.com/SwirX/sxos/stable/install.lua
+wget run https://raw.githubusercontent.com/SwirX/sxos/dev/install.lua
 ```
 
 The installer will:
