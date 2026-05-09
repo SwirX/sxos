@@ -105,18 +105,53 @@ local function draw_prompt()
 end
 
 -- -----------------------------------------------------------------------
--- Read-line with history, inline completion, and syntax highlighting
+-- Word-boundary helpers for Ctrl+arrow and Ctrl+backspace
+-- -----------------------------------------------------------------------
+
+-- Find the insertion position after skipping backward over one word.
+local function prev_word_boundary(line, cursor_pos)
+    local pos = cursor_pos
+    while pos > 0 and string.sub(line, pos, pos) == " " do pos = pos - 1 end
+    while pos > 0 and string.sub(line, pos, pos) ~= " " do pos = pos - 1 end
+    return pos
+end
+
+-- Find the insertion position after skipping forward over one word.
+local function next_word_boundary(line, cursor_pos)
+    local len = #line
+    local pos = cursor_pos
+    while pos < len and string.sub(line, pos + 1, pos + 1) == " " do pos = pos + 1 end
+    while pos < len and string.sub(line, pos + 1, pos + 1) ~= " " do pos = pos + 1 end
+    return pos
+end
+
+-- -----------------------------------------------------------------------
+-- Read-line with history, cursor blink, word navigation, multi-tab completion
 -- -----------------------------------------------------------------------
 
 local function read_line()
     draw_prompt()
 
     local start_x, start_y = term.getCursorPos()
-    local term_width = term.getSize()
-    local line = ""
-    local cursor_pos = 0
-    local history_pos = #shell_state.history + 1
-    local scroll_offset = 0
+    local term_width       = term.getSize()
+    local line             = ""
+    local cursor_pos       = 0
+    local history_pos      = #shell_state.history + 1
+    local scroll_offset    = 0
+    local ctrl_held        = false
+
+    -- Tab-cycling state; nil when not in a cycle.
+    local tab_candidates   = nil
+    local tab_prefix       = nil
+    local tab_index        = 0
+    local tab_base_line    = nil
+
+    local function reset_tab_cycle()
+        tab_candidates = nil
+        tab_prefix     = nil
+        tab_index      = 0
+        tab_base_line  = nil
+    end
 
     local function redraw()
         local visible_width = term_width - start_x
@@ -127,24 +162,22 @@ local function read_line()
         end
 
         term.setCursorPos(start_x, start_y)
-        local visible = string.sub(line, scroll_offset + 1, scroll_offset + visible_width)
+        local visible   = string.sub(line, scroll_offset + 1, scroll_offset + visible_width)
 
-        -- Highlight the command token in the appropriate color.
         local space_pos = string.find(visible, " ")
-        local cmd_part = space_pos and string.sub(visible, 1, space_pos - 1) or visible
+        local cmd_part  = space_pos and string.sub(visible, 1, space_pos - 1) or visible
         local remainder = space_pos and string.sub(visible, space_pos) or ""
 
         if #cmd_part > 0 then
             local first_word = string.match(line, "^%S+") or ""
-            local path_str = shell_state.env.PATH or "/bin;/usr/bin"
+            local path_str   = shell_state.env.PATH or "/bin;/usr/bin"
             local cmd_exists = shell_state.aliases[first_word] ~= nil
             if not cmd_exists then
                 for dir in string.gmatch(path_str, "[^;:]+") do
                     if fs.exists(fs.combine(dir, first_word))
                         or fs.exists(fs.combine(dir, first_word .. ".lua"))
                     then
-                        cmd_exists = true
-                        break
+                        cmd_exists = true; break
                     end
                 end
             end
@@ -154,9 +187,9 @@ local function read_line()
         term.setTextColor(colors.white)
         write(remainder)
 
-        -- Inline completion hint.
+        -- Ghost-text inline hint only when not cycling completions.
         local hint = ""
-        if not is_installer and cursor_pos == #line and #line > 0 then
+        if not is_installer and cursor_pos == #line and #line > 0 and tab_candidates == nil then
             local suffix = completion.complete(line, cursor_pos, shell_state)
             if suffix then
                 hint = suffix
@@ -175,59 +208,131 @@ local function read_line()
         return hint
     end
 
+    term.setCursorBlink(true)
     local current_hint = redraw()
 
     while true do
         local event, p1 = os.pullEvent()
 
-        if event == "char" then
-            line = string.sub(line, 1, cursor_pos) .. p1 .. string.sub(line, cursor_pos + 1)
-            cursor_pos = cursor_pos + 1
-            current_hint = redraw()
-        elseif event == "key" then
-            if p1 == keys.enter then
+        if event == "key" then
+            local key = p1
+
+            if key == keys.leftCtrl or key == keys.rightCtrl then
+                ctrl_held = true
+            elseif key == keys.enter then
+                reset_tab_cycle()
+                term.setCursorBlink(false)
                 print()
                 break
-            elseif p1 == keys.backspace and cursor_pos > 0 then
-                line = string.sub(line, 1, cursor_pos - 1) .. string.sub(line, cursor_pos + 1)
-                cursor_pos = cursor_pos - 1
+            elseif key == keys.backspace then
+                reset_tab_cycle()
+                if ctrl_held then
+                    if cursor_pos > 0 then
+                        local new_pos = prev_word_boundary(line, cursor_pos)
+                        line          = string.sub(line, 1, new_pos) .. string.sub(line, cursor_pos + 1)
+                        cursor_pos    = new_pos
+                        current_hint  = redraw()
+                    end
+                elseif cursor_pos > 0 then
+                    line         = string.sub(line, 1, cursor_pos - 1) .. string.sub(line, cursor_pos + 1)
+                    cursor_pos   = cursor_pos - 1
+                    current_hint = redraw()
+                end
+            elseif key == keys.left then
+                reset_tab_cycle()
+                if ctrl_held then
+                    cursor_pos = prev_word_boundary(line, cursor_pos)
+                elseif cursor_pos > 0 then
+                    cursor_pos = cursor_pos - 1
+                end
                 current_hint = redraw()
-            elseif p1 == keys.left and cursor_pos > 0 then
-                cursor_pos = cursor_pos - 1
-                current_hint = redraw()
-            elseif p1 == keys.right then
-                if cursor_pos < #line then
+            elseif key == keys.right then
+                reset_tab_cycle()
+                if ctrl_held then
+                    cursor_pos = next_word_boundary(line, cursor_pos)
+                elseif cursor_pos < #line then
                     cursor_pos = cursor_pos + 1
-                    current_hint = redraw()
                 elseif #current_hint > 0 then
-                    line = line .. current_hint
+                    line       = line .. current_hint
                     cursor_pos = #line
-                    current_hint = redraw()
                 end
-            elseif p1 == keys.tab and #current_hint > 0 then
-                line = line .. current_hint
-                cursor_pos = #line
                 current_hint = redraw()
-            elseif p1 == keys.up then
-                if history_pos > 1 then
-                    history_pos = history_pos - 1
-                    line = shell_state.history[history_pos] or ""
-                    cursor_pos = #line
+            elseif key == keys.tab then
+                local shift_held = keys.isHeld and (keys.isHeld(keys.leftShift) or keys.isHeld(keys.rightShift)) or false
+
+                if tab_candidates == nil then
+                    local cands, pfx = completion.candidates(line, cursor_pos, shell_state)
+                    if #cands == 0 then
+                        -- No completions: nothing to do.
+                    elseif #cands == 1 then
+                        local suffix = string.sub(cands[1], #pfx + 1)
+                        line         = string.sub(line, 1, cursor_pos - #pfx) .. cands[1]
+                        cursor_pos   = #line
+                        current_hint = redraw()
+                    else
+                        -- Show all candidates, then start cycling.
+                        tab_candidates = cands
+                        tab_prefix     = pfx
+                        tab_base_line  = line
+                        tab_index      = 1
+
+                        print()
+                        for _, cand in ipairs(cands) do
+                            write(cand .. "  ")
+                        end
+                        print()
+                        draw_prompt()
+                        start_x, start_y = term.getCursorPos()
+
+                        local base       = string.sub(tab_base_line, 1, #tab_base_line - #tab_prefix)
+                        line             = base .. tab_candidates[tab_index]
+                        cursor_pos       = #line
+                        current_hint     = redraw()
+                    end
+                else
+                    if shift_held then
+                        tab_index = tab_index - 1
+                        if tab_index < 1 then tab_index = #tab_candidates end
+                    else
+                        tab_index = tab_index + 1
+                        if tab_index > #tab_candidates then tab_index = 1 end
+                    end
+                    local base   = string.sub(tab_base_line, 1, #tab_base_line - #tab_prefix)
+                    line         = base .. tab_candidates[tab_index]
+                    cursor_pos   = #line
                     current_hint = redraw()
                 end
-            elseif p1 == keys.down then
+            elseif key == keys.up then
+                reset_tab_cycle()
+                if history_pos > 1 then
+                    history_pos  = history_pos - 1
+                    line         = shell_state.history[history_pos] or ""
+                    cursor_pos   = #line
+                    current_hint = redraw()
+                end
+            elseif key == keys.down then
+                reset_tab_cycle()
                 if history_pos < #shell_state.history then
-                    history_pos = history_pos + 1
-                    line = shell_state.history[history_pos] or ""
-                    cursor_pos = #line
+                    history_pos  = history_pos + 1
+                    line         = shell_state.history[history_pos] or ""
+                    cursor_pos   = #line
                     current_hint = redraw()
                 elseif history_pos == #shell_state.history then
-                    history_pos = history_pos + 1
-                    line = ""
-                    cursor_pos = 0
+                    history_pos  = history_pos + 1
+                    line         = ""
+                    cursor_pos   = 0
                     current_hint = redraw()
                 end
             end
+        elseif event == "key_up" then
+            if p1 == keys.leftCtrl or p1 == keys.rightCtrl then
+                ctrl_held = false
+            end
+        elseif event == "char" then
+            reset_tab_cycle()
+            line         = string.sub(line, 1, cursor_pos) .. p1 .. string.sub(line, cursor_pos + 1)
+            cursor_pos   = cursor_pos + 1
+            current_hint = redraw()
         end
     end
 

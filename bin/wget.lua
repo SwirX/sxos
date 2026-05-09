@@ -78,7 +78,14 @@ res.close()
 
 if isRun then
     if not check_security() then return end
-    local func, err = load(data, url, "t", _ENV)
+    -- Build a clean sandbox that inherits the true global environment without
+    -- picking up nil locals from the shell scope (e.g. execute, tokenizer).
+    -- Shell locals are not globals: leaking them as nils into the script
+    -- environment causes "attempt to call field X (a nil value)" errors when
+    -- the downloaded script legitimately tries to call a global by that name.
+    local sandbox = setmetatable({}, { __index = _G })
+    sandbox._ENV = sandbox
+    local func, err = load(data, url, "t", sandbox)
     if not func then
         printError("Failed to compile downloaded code: " .. tostring(err))
         return

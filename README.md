@@ -1,50 +1,58 @@
 # SXOS
 
-**Version 2.0.0**
+A UNIX-like operating system for [ComputerCraft: Tweaked](https://tweaked.cc/).
 
-SXOS is a highly modular, event-driven operating system designed explicitly for the ComputerCraft environment. Taking a tailored approach rather than strictly mimicking Linux, it prioritizes native Lua coroutines, unified event routing, peripheral access abstraction, and a fully distributed network topology layout.
+## Quick Install
 
-For comprehensive architectural specifics regarding the package management, filesystem abstractions, and shell functionality, refer to the [Wiki Documentation](wiki/Home.md).
+Run this inside any ComputerCraft computer with HTTP access:
 
-## Core Concepts
-* **Virtual Filesystem (VFS)**: Mounts remote networks and native peripherals uniformly (for example, `/dev`, `/net`).
-* **Event Dispatching**: Centralized `os.pullEventRaw` processing ensuring total race-condition elimination.
-* **Network Object Distribution**: Background discovery handling via transparent Remote Procedure Call bindings.
-* **Component Modularity**: A robust package controller (`sxpm`) safely resolving package dependencies.
-
----
-
-## Installation 
-
-SXOS natively provides dual provisioning styles depending on the user environment setup desired.
-
-### Method 1: The Live Installer (Recommended)
-
-Run the remote installer directly from your ComputerCraft terminal instance to initiate the setup wizard.
-
-```bash
-wget run https://raw.githubusercontent.com/SwirX/ComputerCraft/dev/sxos/install.lua
+```lua
+wget run https://raw.githubusercontent.com/SwirX/sxos/stable/install.lua
 ```
 
-This live installer generates the necessary bootstrap configuration, downloads core dependencies, and prompts you to select one of two available installation types:
+The installer will:
+1. Download and bootstrap `sxpm` (the package manager)
+2. Use `sxpm` to install the `sxos-core` package
+3. Walk you through initial setup
 
-1. **Easy Install**: An interactive, guided setup targeted towards standard environments. It constructs default user credentials and automatic environment profiles dynamically.
-2. **Advanced Install**: A minimal terminal module providing granular administrative control. Designed exclusively for administrators looking to configure custom deployment settings or headless daemon modes manually.
+## Upgrading
 
-### Method 2: Manual Source Installation
+After the first install, upgrading the OS is a single command:
 
-Administrators can directly copy the source directory into the root environment and set `startup.lua` to route to the main `sxos` launch file. Upon rebooting, the system triggers the bootstrap and prompts standard operational behaviors mechanically.
+```sh
+sxpm upgrade
+```
 
-## Advanced Installation Guidelines
+## Shell (bsh) Keyboard Reference
 
-If deploying SXOS via the **Advanced Install** wizard or building via a direct source hierarchy layout blindly, please strictly consult our complete [Manual Installation Guide](wiki/Manual-Installation.md) for explicit file configurations.
+| Key | Action |
+|-----|--------|
+| `Tab` | Complete or list all matches |
+| `Shift+Tab` | Cycle completions backwards |
+| `Ctrl+Left/Right` | Jump one word |
+| `Ctrl+Backspace` | Delete one word |
+| `Up/Down` | History |
+| `Right` (at end) | Accept inline ghost hint |
 
-Ensure that:
-* You layout the core directories like `/etc/sxos` effectively.
-* You construct `/etc/sxos/users` and `/etc/sxos/shadow` accurately ensuring your core user is defined properly.
-* You initialize the final `/etc/sxos/config.lua` setting `installed = true`.
+## Project Layout
 
-This process eliminates redundant background configurations for dedicated cluster deployment usage.
+```
+sxos/
+  bin/          Core binaries (bsh, ls, diff, wget, ...)
+  usr/bin/      User binaries (yafe, yate, sxfetch)
+  lib/          Runtime libraries (sh, fs, net, core, ...)
+  sys/          Kernel and environment
+  boot/         Bootloader
+  etc/          Default skeleton config
+  services/     Background daemons
+  install.lua   Installer entry point
+  manifest.lua  sxpkg-1 package manifest (consumed by sxpm)
+```
 
----
-*SXOS is a ComputerCraft-native operating system. It is built around what makes CC unique: events, peripherals, and distributed networking.*
+## Repositories
+
+| Repo | Description |
+|------|-------------|
+| [sxos](https://github.com/SwirX/sxos) | OS source code |
+| [sxpm](https://github.com/SwirX/sxpm) | Package manager |
+| [sxpm-repo](https://github.com/SwirX/sxpm-repo) | Package repository index |
