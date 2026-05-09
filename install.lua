@@ -33,31 +33,42 @@ print("SXOS Installer")
 print("Installs the SXOS operating system via sxpm.")
 print("")
 
-print("Select channel:")
+print("Select sxpm branch:")
 print("  1. stable (recommended)")
 print("  2. dev (latest development build)")
-write("Channel [1]: ")
-local channel_input = read()
-local channel = "stable"
-if channel_input == "2" or channel_input == "dev" then
-    channel = "dev"
+write("sxpm Branch [1]: ")
+local sxpm_input = read()
+local sxpm_branch = "stable"
+if sxpm_input == "2" or sxpm_input == "dev" then
+    sxpm_branch = "dev"
 end
 
--- Setup URLs based on channel
-local sxpm_branch = channel == "dev" and "main" or "stable"
-if channel == "dev" then sxpm_branch = "dev" end -- Assuming sxpm uses 'dev' or 'master'
--- sxpm repo usually has main instead of dev? We'll assume the branch matches the channel name, or 'main' if dev.
--- Wait, let's just use the selected channel.
-local SXPM_BOOTSTRAP_URL   = "https://raw.githubusercontent.com/SwirX/sxpm/" .. channel .. "/src/bin/sxpm.lua"
+print("")
+print("Select sxos branch:")
+print("  1. stable (recommended)")
+print("  2. dev (latest development build)")
+write("sxos Branch [1]: ")
+local sxos_input = read()
+local sxos_branch = "stable"
+if sxos_input == "2" or sxos_input == "dev" then
+    sxos_branch = "dev"
+end
+
+-- Setup URLs based on channels
+local SXPM_BOOTSTRAP_URL   = "https://raw.githubusercontent.com/SwirX/sxpm/" .. sxpm_branch .. "/src/bin/sxpm.lua"
 local SXPM_LIBS            = {
-    ["lib/pkg/manifest.lua"] = "https://raw.githubusercontent.com/SwirX/sxpm/" .. channel .. "/src/lib/pkg/manifest.lua",
-    ["lib/pkg/database.lua"] = "https://raw.githubusercontent.com/SwirX/sxpm/" .. channel .. "/src/lib/pkg/database.lua",
-    ["lib/pkg/resolve.lua"]  = "https://raw.githubusercontent.com/SwirX/sxpm/" .. channel .. "/src/lib/pkg/resolve.lua",
-    ["lib/pkg/archive.lua"]  = "https://raw.githubusercontent.com/SwirX/sxpm/" .. channel .. "/src/lib/pkg/archive.lua",
+    ["lib/pkg/manifest.lua"] = "https://raw.githubusercontent.com/SwirX/sxpm/" ..
+    sxpm_branch .. "/src/lib/pkg/manifest.lua",
+    ["lib/pkg/database.lua"] = "https://raw.githubusercontent.com/SwirX/sxpm/" ..
+    sxpm_branch .. "/src/lib/pkg/database.lua",
+    ["lib/pkg/resolve.lua"]  = "https://raw.githubusercontent.com/SwirX/sxpm/" ..
+    sxpm_branch .. "/src/lib/pkg/resolve.lua",
+    ["lib/pkg/archive.lua"]  = "https://raw.githubusercontent.com/SwirX/sxpm/" ..
+    sxpm_branch .. "/src/lib/pkg/archive.lua",
 }
-local REPO_INDEX_URL       = "https://raw.githubusercontent.com/SwirX/sxpm-repo/" .. channel .. "/index.json"
-local EASY_INSTALL_URL     = "https://raw.githubusercontent.com/SwirX/sxos/" .. channel .. "/installers/easy.lua"
-local ADVANCED_INSTALL_URL = "https://raw.githubusercontent.com/SwirX/sxos/" .. channel .. "/installers/advanced.lua"
+local REPO_INDEX_URL       = "https://raw.githubusercontent.com/SwirX/sxpm-repo/" .. sxos_branch .. "/index.json"
+local EASY_INSTALL_URL     = "https://raw.githubusercontent.com/SwirX/sxos/" .. sxos_branch .. "/installers/easy.lua"
+local ADVANCED_INSTALL_URL = "https://raw.githubusercontent.com/SwirX/sxos/" .. sxos_branch .. "/installers/advanced.lua"
 
 
 -- -----------------------------------------------------------------------
@@ -92,7 +103,7 @@ end
 print("")
 print("-- Seeding repository index --")
 
-ok, err = download(REPO_INDEX_URL, "/var/cache/sxpm/index_" .. channel .. ".json")
+ok, err = download(REPO_INDEX_URL, "/var/cache/sxpm/index_" .. sxos_branch .. ".json")
 if not ok then
     printError(err); return
 end
