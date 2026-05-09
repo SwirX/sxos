@@ -23,7 +23,12 @@ local function resolve_executable(name, shell_state)
         or string.sub(name, 1, 2) == "./"
         or string.sub(name, 1, 3) == "../"
     then
-        local resolved = fs.combine(shell_state.cwd, name)
+        local resolved
+        if string.sub(name, 1, 1) == "/" then
+            resolved = fs.combine("", name)
+        else
+            resolved = fs.combine(shell_state.cwd, name)
+        end
         if fs.exists(resolved) and not fs.isDir(resolved) then return resolved end
         if fs.exists(resolved .. ".lua") then return resolved .. ".lua" end
         return nil

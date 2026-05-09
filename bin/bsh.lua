@@ -39,7 +39,20 @@ shell_state.process_env.shell = {
         return fs.combine(shell_state.cwd, path)
     end,
     resolveProgram = function(name)
-        if shell_state.aliases[name] then return name end
+        if shell_state.aliases[name] then
+            name = string.match(shell_state.aliases[name], "^%S+") or name
+        end
+        if string.sub(name, 1, 1) == "/" or string.sub(name, 1, 2) == "./" or string.sub(name, 1, 3) == "../" then
+            local resolved
+            if string.sub(name, 1, 1) == "/" then
+                resolved = fs.combine("", name)
+            else
+                resolved = fs.combine(shell_state.cwd, name)
+            end
+            if fs.exists(resolved) and not fs.isDir(resolved) then return resolved end
+            if fs.exists(resolved .. ".lua") and not fs.isDir(resolved .. ".lua") then return resolved .. ".lua" end
+            return nil
+        end
         local path_str = shell_state.env.PATH or "/bin;/usr/bin"
         for dir in string.gmatch(path_str, "[^;:]+") do
             local candidate = fs.combine(dir, name)
