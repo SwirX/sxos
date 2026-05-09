@@ -54,9 +54,15 @@ function env.create_process_env(parent_env, initial_vars)
     process_env.coroutine = parent_env.coroutine
     process_env.io = parent_env.io
 
+    local core_path = "/lib/?.lua;/lib/?/init.lua;?;?.lua"
+    local final_path = core_path
+    if parent_env.package and parent_env.package.path then
+        final_path = core_path .. ";" .. parent_env.package.path
+    end
+
     process_env.package = {
         loaded = {},
-        path = parent_env.package and parent_env.package.path or "?;?.lua"
+        path = final_path
     }
 
     if parent_env.package and parent_env.package.loaded then
@@ -92,7 +98,8 @@ function env.create_process_env(parent_env, initial_vars)
                     return result
                 else
                     error(
-                    "error loading module '" .. modname .. "' from file '" .. filename .. "':\n  " .. tostring(err), 2)
+                        "error loading module '" .. modname .. "' from file '" .. filename .. "':\n  " .. tostring(err),
+                        2)
                 end
             else
                 table.insert(errors, "no file '" .. filename .. "'")
