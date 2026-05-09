@@ -2,15 +2,6 @@
 -- Downloads sxpm, then uses it to install the sxos-core package.
 -- After installation, subsequent upgrades work via: sxpm upgrade sxos-core
 
-local SXPM_BOOTSTRAP_URL = "https://raw.githubusercontent.com/SwirX/sxpm/stable/src/bin/sxpm.lua"
-local SXPM_LIBS = {
-    ["lib/pkg/manifest.lua"] = "https://raw.githubusercontent.com/SwirX/sxpm/stable/src/lib/pkg/manifest.lua",
-    ["lib/pkg/database.lua"] = "https://raw.githubusercontent.com/SwirX/sxpm/stable/src/lib/pkg/database.lua",
-    ["lib/pkg/resolve.lua"]  = "https://raw.githubusercontent.com/SwirX/sxpm/stable/src/lib/pkg/resolve.lua",
-    ["lib/pkg/archive.lua"]  = "https://raw.githubusercontent.com/SwirX/sxpm/stable/src/lib/pkg/archive.lua",
-}
-local REPO_INDEX_URL = "https://raw.githubusercontent.com/SwirX/sxpm-repo/stable/index.json"
-
 -- -----------------------------------------------------------------------
 -- Minimal download helper with progress indicator
 -- -----------------------------------------------------------------------
@@ -52,6 +43,23 @@ if channel_input == "2" or channel_input == "dev" then
     channel = "dev"
 end
 
+-- Setup URLs based on channel
+local sxpm_branch = channel == "dev" and "main" or "stable"
+if channel == "dev" then sxpm_branch = "dev" end -- Assuming sxpm uses 'dev' or 'master'
+-- sxpm repo usually has main instead of dev? We'll assume the branch matches the channel name, or 'main' if dev.
+-- Wait, let's just use the selected channel.
+local SXPM_BOOTSTRAP_URL   = "https://raw.githubusercontent.com/SwirX/sxpm/" .. channel .. "/src/bin/sxpm.lua"
+local SXPM_LIBS            = {
+    ["lib/pkg/manifest.lua"] = "https://raw.githubusercontent.com/SwirX/sxpm/" .. channel .. "/src/lib/pkg/manifest.lua",
+    ["lib/pkg/database.lua"] = "https://raw.githubusercontent.com/SwirX/sxpm/" .. channel .. "/src/lib/pkg/database.lua",
+    ["lib/pkg/resolve.lua"]  = "https://raw.githubusercontent.com/SwirX/sxpm/" .. channel .. "/src/lib/pkg/resolve.lua",
+    ["lib/pkg/archive.lua"]  = "https://raw.githubusercontent.com/SwirX/sxpm/" .. channel .. "/src/lib/pkg/archive.lua",
+}
+local REPO_INDEX_URL       = "https://raw.githubusercontent.com/SwirX/sxpm-repo/" .. channel .. "/index.json"
+local EASY_INSTALL_URL     = "https://raw.githubusercontent.com/SwirX/sxos/" .. channel .. "/installers/easy.lua"
+local ADVANCED_INSTALL_URL = "https://raw.githubusercontent.com/SwirX/sxos/" .. channel .. "/installers/advanced.lua"
+
+
 -- -----------------------------------------------------------------------
 -- Step 1: Bootstrap sxpm
 -- -----------------------------------------------------------------------
@@ -70,7 +78,9 @@ end
 for dest, url in pairs(SXPM_LIBS) do
     write("  " .. dest .. "... ")
     ok, err = download(url, "/" .. dest)
-    if ok then print("ok") else
+    if ok then
+        print("ok")
+    else
         print("FAILED"); printError(err); return
     end
 end
@@ -82,7 +92,7 @@ end
 print("")
 print("-- Seeding repository index --")
 
-ok, err = download(REPO_INDEX_URL, "/var/cache/sxpm/index_stable.json")
+ok, err = download(REPO_INDEX_URL, "/var/cache/sxpm/index_" .. channel .. ".json")
 if not ok then
     printError(err); return
 end
@@ -95,6 +105,22 @@ print("Repository index cached.")
 print("")
 print("-- Installing sxos-core --")
 shell.run("/bin/sxpm.lua", "install", "sxos-core")
+
+-- -----------------------------------------------------------------------
+-- Step 4: Download Setup Scripts
+-- -----------------------------------------------------------------------
+
+print("")
+print("Fetching setup scripts...")
+ok, err = download(EASY_INSTALL_URL, "/installers/easy.lua")
+if not ok then
+    printError("Failed to fetch easy installer"); return
+end
+
+ok, err = download(ADVANCED_INSTALL_URL, "/installers/advanced.lua")
+if not ok then
+    printError("Failed to fetch advanced installer"); return
+end
 
 -- -----------------------------------------------------------------------
 -- Post-install: Present installer menu for user setup
@@ -149,7 +175,10 @@ term.clear()
 term.setCursorPos(1, 1)
 
 if selected == 1 then
-    shell.run("installers/easy.lua")
+    shell.run("/installers/easy.lua")
 else
-    shell.run("installers/advanced.lua")
+    shell.run("/installers/advanced.lua")
 end
+
+-- Cleanup installer dir since they are one-time use
+fs.delete("/installers")
