@@ -52,7 +52,22 @@ shell_state.process_env.shell = {
     setAlias = function(name, value) shell_state.aliases[name] = value end,
     clearAlias = function(name) shell_state.aliases[name] = nil end,
     programs = function() return {} end,
-    getRunningProgram = function() return "bsh" end
+    getRunningProgram = function() return "bsh" end,
+    run = function(...)
+        local tArgs = { ... }
+        local cmdStr = table.concat(tArgs, " ")
+        if string.match(cmdStr, "^%s*$") then return true end
+
+        local tokens = tokenizer.tokenize(cmdStr)
+        local ast, parse_err = parser.parse(tokens)
+        if parse_err then
+            printError("bsh: " .. parse_err)
+            return false
+        elseif ast then
+            return execute.run(ast, shell_state)
+        end
+        return false
+    end
 }
 
 local user                    = _ENV.ENV.USER or "user"

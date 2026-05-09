@@ -8,7 +8,7 @@ return {
 
     meta = {
         name        = "sxos-core",
-        version     = "2.0.1",
+        version     = "2.0.2",
         author      = "SwirX",
         description = "SXOS - core operating system for ComputerCraft",
         channel     = "stable",

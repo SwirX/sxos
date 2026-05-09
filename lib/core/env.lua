@@ -42,7 +42,27 @@ function env.create_process_env(parent_env, initial_vars)
     process_env.string = parent_env.string
     process_env.table = parent_env.table
     process_env.math = parent_env.math
-    process_env.os = parent_env.os
+    process_env.os = setmetatable({}, { __index = parent_env.os })
+    process_env.os.run = function(_tEnv, _sPath, ...)
+        local tArgs = { ... }
+        local tEnv = _tEnv or process_env
+        if type(tEnv) == "table" and getmetatable(tEnv) == nil then
+            setmetatable(tEnv, { __index = process_env })
+        end
+        local fnFile, err = loadfile(_sPath, "t", tEnv)
+        if fnFile then
+            local ok, errRun = pcall(fnFile, table.unpack(tArgs))
+            if not ok and errRun and errRun ~= "" then
+                if process_env.printError then process_env.printError(errRun) end
+                return false
+            end
+            return true
+        end
+        if err and err ~= "" then
+            if process_env.printError then process_env.printError(err) end
+        end
+        return false
+    end
     process_env.fs = parent_env.fs
     process_env.term = parent_env.term
     process_env.colors = parent_env.colors
