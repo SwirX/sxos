@@ -1,0 +1,5 @@
+print("SXOS Common Commands:")
+print("Files: ls, cd, pwd, touch, rm, cat, cp, mv, mkdir, mkcd, yate, yafe")
+print("Unix : grep, find, which, env, export, source, chmod, chown, ln, mount")
+print("System: clear, shutdown, reboot, wget, curl, git")
+print("Run any command to see basic usage.")
