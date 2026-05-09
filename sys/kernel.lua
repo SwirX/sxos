@@ -66,6 +66,26 @@ local shell_env          = env_lib.create_process_env(_G, {
 })
 shell_env.INSTALLER_MODE = system_config.installer_shell or false
 
+-- Extend Lua module search path so sxpm-installed packages are requireable.
+-- Format: /lib/?.lua;/lib/?/init.lua plus per-package subdirs.
+local LIB_PATHS          = {
+    "/lib/?.lua",
+    "/lib/?/init.lua",
+    "/lib/sxui/?.lua",
+    "/lib/sxmusic/?.lua",
+    "/lib/core/?.lua",
+    "/lib/fs/?.lua",
+    "/lib/sh/?.lua",
+    "/lib/net/?.lua",
+    "/lib/sx/?.lua",
+    "/lib/ui/?.lua",
+    "/usr/lib/?.lua",
+}
+-- Prepend our paths; keep whatever CraftOS already has at the end.
+local base_path          = package and package.path or ""
+shell_env.package        = shell_env.package or {}
+shell_env.package.path   = table.concat(LIB_PATHS, ";") .. (base_path ~= "" and (";" .. base_path) or "")
+
 -- Inject the sx.* API surface and the VFS into the shell environment.
 -- Binaries get sx by loading /lib/core/sx.lua from their own code.
 -- The shell itself gets direct references for performance.
