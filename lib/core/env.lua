@@ -37,7 +37,6 @@ function env.create_process_env(parent_env, initial_vars)
     process_env.getmetatable = parent_env.getmetatable
     process_env.rawget = parent_env.rawget
     process_env.rawset = parent_env.rawset
-    process_env.require = parent_env.require
     process_env.select = parent_env.select
     process_env.unpack = parent_env.unpack or table.unpack
     process_env.string = parent_env.string
@@ -54,6 +53,66 @@ function env.create_process_env(parent_env, initial_vars)
     process_env.http = parent_env.http
     process_env.coroutine = parent_env.coroutine
     process_env.io = parent_env.io
+
+    process_env.package = {
+        loaded = {},
+        path = parent_env.package and parent_env.package.path or "?;?.lua"
+    }
+
+    if parent_env.package and parent_env.package.loaded then
+        for k, v in pairs(parent_env.package.loaded) do
+            process_env.package.loaded[k] = v
+        end
+    end
+
+    process_env.require = function(modname)
+        if type(modname) ~= "string" then
+            error("bad argument #1 to 'require' (string expected, got " .. type(modname) .. ")", 2)
+        end
+
+        if process_env.package.loaded[modname] ~= nil then
+            return process_env.package.loaded[modname]
+        end
+
+        local errors = {}
+        local pathStr = process_env.package.path or "?;?.lua"
+        local modpath = string.gsub(modname, "%.", "/")
+
+        for path in string.gmatch(pathStr, "[^;]+") do
+            local filename = string.gsub(path, "%?", modpath)
+
+            if process_env.fs.exists(filename) and not process_env.fs.isDir(filename) then
+                local fn, err = loadfile(filename, "t", process_env)
+                if fn then
+                    local result = fn(modname)
+                    if result == nil then
+                        result = true
+                    end
+                    process_env.package.loaded[modname] = result
+                    return result
+                else
+                    error(
+                    "error loading module '" .. modname .. "' from file '" .. filename .. "':\n  " .. tostring(err), 2)
+                end
+            else
+                table.insert(errors, "no file '" .. filename .. "'")
+            end
+        end
+
+        if parent_env.require then
+            local ok, result = pcall(parent_env.require, modname)
+            if ok then
+                process_env.package.loaded[modname] = result
+                return result
+            else
+                table.insert(errors, result)
+            end
+        end
+
+        local errStr = "module '" .. modname .. "' not found:\n  " .. table.concat(errors, "\n  ")
+        error(errStr, 2)
+    end
+
     process_env._ENV = process_env
 
     return process_env
