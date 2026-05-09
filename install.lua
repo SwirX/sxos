@@ -104,7 +104,31 @@ print("Repository index cached.")
 
 print("")
 print("-- Installing sxos-core --")
+
+-- Clear any existing package DB so we can definitively check if install succeeded
+if fs.exists("/var/lib/sxpm/installed.db") then
+    fs.delete("/var/lib/sxpm/installed.db")
+end
+
 shell.run("/bin/sxpm.lua", "install", "sxos-core")
+
+local success = false
+if fs.exists("/var/lib/sxpm/installed.db") then
+    local f = fs.open("/var/lib/sxpm/installed.db", "r")
+    if f then
+        local db = textutils.unserialize(f.readAll() or "")
+        if db and db["sxos-core"] then success = true end
+        f.close()
+    end
+end
+
+if not success then
+    printError("\n[FATAL] sxos-core failed to install.")
+    print("Please review the error messages above.")
+    print("Press any key to abort...")
+    os.pullEvent("key")
+    return
+end
 
 -- -----------------------------------------------------------------------
 -- Step 4: Download Setup Scripts
