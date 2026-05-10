@@ -6,18 +6,24 @@ function driver.get_capabilities(native)
 end
 
 function driver.open(device_entry)
-    local instance = {}
+    local instance = {
+        _device_id = device_entry.id,
+        _device_type = device_entry.type
+    }
+
     if device_entry.native then
-        -- Expose underlying functions securely
         for k, v in pairs(device_entry.native) do
             if type(v) == "function" then
-                instance[k] = function(...)
-                    return v(...)
-                end
+                instance[k] = function(...) return v(...) end
             end
         end
     end
-    instance._device_id = device_entry.id
+
+    -- Generic VFS Handle Close
+    function instance.close()
+        -- No-op
+    end
+
     return instance
 end
 

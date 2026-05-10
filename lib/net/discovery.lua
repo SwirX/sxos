@@ -19,16 +19,31 @@ function discovery.set_hostname(name)
     registered_hostname = name
 end
 
+-- Wire up device registry dependencies
+local device_registry = nil
+function discovery.init(dr)
+    device_registry = dr
+end
+
 -- Build the announcement payload sent in response to discovery broadcasts.
 local function build_announcement()
     local service_list = {}
     for _, entry in ipairs(service_module.list()) do
         table.insert(service_list, entry.name)
     end
+
+    local dev_list = {}
+    if device_registry then
+        for _, dev in pairs(device_registry.get_all()) do
+            table.insert(dev_list, dev.id)
+        end
+    end
+
     return {
         hostname = registered_hostname,
         id       = os.getComputerID(),
         services = service_list,
+        devices  = dev_list
     }
 end
 

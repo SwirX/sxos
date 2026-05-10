@@ -55,6 +55,7 @@ end
 local discoverd_path = "/services/discoverd.lua"
 if fs.exists(discoverd_path) then
     local discovery_lib = load_lib("/lib/net/discovery.lua")
+    if discovery_lib.init then discovery_lib.init(device) end
     local discoverd_pid = proc.spawn(function()
         discovery_lib.run_responder()
     end, { name = "discoverd", cwd = "/" })

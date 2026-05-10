@@ -1,15 +1,19 @@
 local device = require("sx.device")
-local devs = device.get_all()
+local all_devices = device.get_all()
 
-print(string.format("%-12s %-10s %-10s %-10s", "NAME", "TYPE", "SIDE", "STATUS"))
-for _, dev in ipairs(devs) do
-    local status = dev.mounted and "mounted" or "available"
-    if dev.remote then
-        status = "remote " .. status
+print(string.format("%-15s %-10s %-10s %-15s", "ID", "TYPE", "STATE", "MOUNT"))
+for _, dev in ipairs(all_devices) do
+    local state = "detached"
+    if dev.mounted then
+        state = "mounted"
+    elseif dev.side or dev.remote then
+        state = "available"
     end
-    if dev.exclusive then
-        status = "busy"
-    end
-    print(string.format("%-12s %-10s %-10s %-10s",
-        dev.id, dev.type, dev.side or "remote", status))
+
+    if dev.exclusive then state = "claimed" end
+
+    local mountpoint = dev.mounted and dev.mountpoint or "-"
+
+    print(string.format("%-15s %-10s %-10s %-15s",
+        dev.id, dev.type, state, mountpoint))
 end
