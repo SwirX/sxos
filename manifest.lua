@@ -8,7 +8,7 @@ return {
 
     meta = {
         name         = "sxos-core",
-        version      = "2.0.2",
+        version      = "2.1.0",
         author       = "SwirX",
         description  = "SXOS - core operating system for ComputerCraft",
         channel      = "stable",
@@ -39,6 +39,10 @@ return {
         { path = "/lib/core/process.lua",              source = "lib/core/process.lua" },
         { path = "/lib/core/service.lua",              source = "lib/core/service.lua" },
         { path = "/lib/core/sx.lua",                   source = "lib/core/sx.lua" },
+        { path = "/lib/core/device.lua",               source = "lib/core/device.lua" },
+
+        -- Compatibility shims
+        { path = "/lib/compat/peripheral.lua",         source = "lib/compat/peripheral.lua" },
 
         -- Filesystem libraries
         { path = "/lib/fs/vfs.lua",                    source = "lib/fs/vfs.lua" },
@@ -54,6 +58,13 @@ return {
         -- SX config + VFS shim
         { path = "/lib/sx/config.lua",                 source = "lib/sx/config.lua" },
         { path = "/lib/sx/vfs.lua",                    source = "lib/sx/vfs.lua" },
+
+        -- Device Driver Backends
+        { path = "/lib/devices/generic.lua",           source = "lib/devices/generic.lua" },
+        { path = "/lib/devices/speaker.lua",           source = "lib/devices/speaker.lua" },
+
+        -- Fstab configurations
+        { path = "/etc/sxos/fstab.lua",                source = "etc/fstab.lua" },
 
         -- UI library
         { path = "/lib/ui/theme.lua",                  source = "lib/ui/theme.lua" },
