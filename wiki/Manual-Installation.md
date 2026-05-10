@@ -1,89 +1,66 @@
 # Manual Installation Guide
 
-When deploying SXOS outside the Easy Installer, administrators must manually structure the operating system environment. 
+Hey! If you are configuring SXOS from absolute scratch, this guide covers the technical bootstrap execution bypassing my standard UI installers. 
 
-If you use the **Advanced Installer** option via `install.lua`, the setup drops you into an unrestrained `bsh` root shell environment. If you transfer the `sxos` folder entirely to the computer directly, you might be similarly forced into a minimal state upon reboot. In either circumstance, follow these explicit steps to finalize the base operating environment.
+## 1. Bootstrapping Package Protocol
 
-## 1. Directory Structure
+Because I shifted the entire architecture to a decoupled modular standard, you'll need `sxpm` first. Fetch the installer manually:
 
-Construct the required OS directory tree structure if it does not naturally exist yet. Use the bundled command modules for this layout parsing:
-
-```bash
-mkdir /bin /etc /home /lib /root /tmp /usr /var /.config
-mkdir /usr/bin /usr/lib /usr/lib/sxpm
-mkdir /etc/sxpm /var/lib/sxpm /var/cache/sxpm
-mkdir /etc/sxos
+```lua
+wget run https://raw.githubusercontent.com/SwirX/sxpm/stable/install.lua
 ```
 
-## 2. User Context Configuration
+This globally injects `sxpm` and sets up the local database mappings.
 
-You must create your user hierarchy. Replace `<user>` with your desired unique username.
+## 2. Syncing Indices
 
-```bash
-mkdir /home/<user>
+Update the local definitions cache:
+
+```sh
+/usr/bin/sxpm.lua sync
 ```
 
-SXOS requires a valid users mapping file defining system identities to core permissions, and a securely abstracted shadow file for credentials. Use the bundled editor `yate` to construct these tables globally.
+## 3. Base OS Integration
 
-### Creating `/etc/sxos/users`
+Acquire the underlying `sxos-core` kernel framework. This securely establishes `/sys`, `/boot`, `/lib`, and `/etc`:
 
-Execute the editor targeting your user path:
+```sh
+/usr/bin/sxpm.lua install sxos-core
+```
 
-```bash
+## 4. Subsystem Deployments
+
+The environment currently functions practically as a headless logic state. Inject standard capability logic explicitly:
+
+```sh
+/usr/bin/sxpm.lua install bsh
+/usr/bin/sxpm.lua install sx-coreutils
+/usr/bin/sxpm.lua install sx-netutils
+```
+
+*(If you require desktop integration rapidly, running `sxpm.lua install sxos-desktop` natively pulls all base dependencies asynchronously.)*
+
+## 5. Security & Configuration Context
+
+Generate explicit system paths handling your targeted alias:
+
+```sh
+mkdir /home/admin
+```
+
+Construct identity configurations using my modal editor tool, `yate`:
+
+```sh
+/usr/bin/sxpm.lua install yate
 yate /etc/sxos/users
 ```
-Add the following table logic, strictly formatting it as standard serialized Lua format:
-```lua
-{
-    ["<user>"] = {
-        home = "/home/<user>",
-        shell = "/bin/bsh.lua",
-        groups = { "admin", "users" }
-    }
-}
-```
 
-### Creating `/etc/sxos/shadow`
+Bind mapping configurations specifically matching your alias, properly directing `/bin/bsh.lua` correctly as the runtime execution point. Create your encrypted or null representation inside `/etc/sxos/shadow`.
 
-Execute the editor targeting your shadow definitions:
+## 6. System Reset
 
-```bash
-yate /etc/sxos/shadow
-```
-Insert the password definition table explicitly. For automatic login sequences bypassing prompt barriers, pass an empty string logic instead of strict text.
-```lua
-{
-    ["<user>"] = "your_secure_password"
-}
-```
+Commit all explicit filesystem configurations:
 
-## 3. Core System Logic Layer
-
-Configure your global system behavior definitions inside the boot controller sequence parameters.
-
-Execute the editor targeting your global config mappings:
-
-```bash
-yate /etc/sxos/config.lua
-```
-
-Generate the core configuration array layout securely:
-```lua
-{
-    autologin = false,
-    autologin_user = nil,
-    installed = true
-}
-```
-
-*Note: For autonomous headless environments demanding instant functional operational entry, securely declare `autologin = true` and `autologin_user = "<user>"` accordingly.*
-
-## 4. Finalization Execution
-
-Once all core layout logics are saved mechanically to the `/etc` layer framework successfully, commit the runtime logic:
-
-```bash
+```sh
 reboot
 ```
-
-Upon boot, the SXOS core intercepts the underlying runtime payload, reads your newly defined tables, and cleanly spawns the required authentication barriers prior to delegating the primary user `bsh` shell runtime execution flow mechanically.

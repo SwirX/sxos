@@ -1,58 +1,48 @@
 # SXOS
 
-A UNIX-like operating system for [ComputerCraft: Tweaked](https://tweaked.cc/).
+Hey! Welcome to my custom UNIX-style OS framework built from the ground up for [ComputerCraft: Tweaked](https://tweaked.cc/). I engineered the architecture specifically for high performance and modularity.
+
+## Clean Architecture
+
+This isn't a monolithic codebase. I split the infrastructure completely: the absolute core systems (kernel, virtual filesystem, and bootloader) exist here inside this repository. Everything else, including user binaries and logic utilities, has been decoupled into custom `sx-` packages. Everything routes through `sxpm`, the native package manager I wrote to guarantee system integrity.
 
 ## Quick Install
 
-Run this inside any ComputerCraft computer with HTTP access:
+To bootstrap this environment instantly, simply execute this from any CraftOS instance:
 
 ```lua
 wget run https://raw.githubusercontent.com/SwirX/sxos/dev/install.lua
 ```
 
-The installer will:
-1. Download and bootstrap `sxpm` (the package manager)
-2. Use `sxpm` to install the `sxos-core` package
-3. Walk you through initial setup
+It fetches `sxpm` and handles the entire installation dynamically.
 
 ## Upgrading
 
-After the first install, upgrading the OS is a single command:
+Once bootstrapped, you execute upgrades entirely through the package manager:
 
 ```sh
 sxpm upgrade
 ```
 
-## Shell (bsh) Keyboard Reference
-
-| Key | Action |
-|-----|--------|
-| `Tab` | Complete or list all matches |
-| `Shift+Tab` | Cycle completions backwards |
-| `Ctrl+Left/Right` | Jump one word |
-| `Ctrl+Backspace` | Delete one word |
-| `Up/Down` | History |
-| `Right` (at end) | Accept inline ghost hint |
-
 ## Project Layout
 
 ```
 sxos/
-  bin/          Core binaries (bsh, ls, diff, wget, ...)
-  usr/bin/      User binaries (yafe, yate, sxfetch)
-  lib/          Runtime libraries (sh, fs, net, core, ...)
-  sys/          Kernel and environment
-  boot/         Bootloader
-  etc/          Default skeleton config
-  services/     Background daemons
-  install.lua   Installer entry point
-  manifest.lua  sxpkg-1 package manifest (consumed by sxpm)
+  boot/         Bootloader staging
+  etc/          Skeleton initialization parameters
+  lib/          Runtime abstraction libraries (fs, core API)
+  sys/          Kernel environment controllers
+  services/     Background operational daemons
+  install.lua   The minimalist bootstrap payload
+  manifest.lua  Strict definition mapping for sxpkg compilation
 ```
 
-## Repositories
+*(Modules like `bsh` and `sx-coreutils` map into `/bin/` autonomously at runtime post-installation.)*
 
-| Repo | Description |
-|------|-------------|
-| [sxos](https://github.com/SwirX/sxos) | OS source code |
-| [sxpm](https://github.com/SwirX/sxpm) | Package manager |
-| [sxpm-repo](https://github.com/SwirX/sxpm-repo) | Package repository index |
+## Connected Ecosystem
+
+| Repository | Purpose |
+|------------|---------|
+| [sxos](https://github.com/SwirX/sxos) | Core operating infrastructure |
+| [sxpm](https://github.com/SwirX/sxpm) | Package manager logic |
+| [sxpm-repo](https://github.com/SwirX/sxpm-repo) | Remote distribution indices |

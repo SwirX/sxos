@@ -71,8 +71,6 @@ return {
 
         -- Services
         { path = "/services/discoverd.lua",            source = "services/discoverd.lua" },
-
-        -- User binaries moved to standalone packages
     },
 
     lifecycle = {
@@ -80,6 +78,6 @@ return {
     },
 
     integrity = {
-        sha256 = "FILL_ME",
+        sha256 = "",
     },
 }
