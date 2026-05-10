@@ -1,17 +1,35 @@
 local args = { ... }
 if #args < 1 then
-    print("Usage: umount <side or path>")
-    print("Note: ComputerCraft disk drives cannot be unmounted via software.")
-    print("      Use 'umount' to pop the disk out instead.")
+    print("Usage: umount <path_or_side_or_id>")
     return
 end
 
 local target = args[1]
+local device = require("sx.device")
+
+-- First try to unmount a virtual path or ID
+if device then
+    -- Try by path first
+    local ok, err = device.unmount(target)
+    if ok then
+        print("Unmounted " .. target)
+        return
+    end
+
+    -- Try by ID
+    local dev = device.get(target)
+    if dev and dev.mounted then
+        device.unmount(dev.mountpoint)
+        print("Unmounted device " .. target)
+        return
+    end
+end
+
+-- Fallback to disk ejection logic
 if disk.isPresent(target) then
     disk.eject(target)
     print("Ejected disk from " .. target)
 else
-    -- Find if they passed a path like /disk
     local targetNode = string.gsub(target, "^/+", "")
     local devs = { peripheral.find("drive") }
     local found = false
@@ -24,6 +42,6 @@ else
         end
     end
     if not found then
-        printError("umount: No such disk or drive")
+        printError("umount: No such disk, drive, or mounted path")
     end
 end

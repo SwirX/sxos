@@ -18,16 +18,37 @@ end
 local log     = load_lib("/lib/core/log.lua")
 local env_lib = load_lib("/lib/core/env.lua")
 local events  = load_lib("/lib/core/events.lua")
+local device  = load_lib("/lib/core/device.lua")
 local proc    = load_lib("/lib/core/process.lua")
 local svc     = load_lib("/lib/core/service.lua")
 local vfs     = load_lib("/lib/fs/vfs.lua")
 local auth    = load_lib("/sys/auth.lua")
 
+-- Initialize device registry immediately tracking peripherals
+device.init(events)
+
 log.info("kernel", "Stage 2 complete: core libraries loaded")
 
 -- Stage 3: Mount virtual filesystems.
-vfs.mount_builtin_drivers()
+vfs.mount_builtin_drivers(device)
 log.info("kernel", "Stage 3 complete: VFS mounted")
+
+-- Process fstab auto-mounts
+local fstab_path = "/etc/sxos/fstab.lua"
+if fs.exists(fstab_path) then
+    local ok, fstab = pcall(load_lib, fstab_path)
+    if ok and fstab.auto_mount and fstab.devices then
+        for _, entry in ipairs(fstab.devices) do
+            for _, dev in pairs(device.get_all()) do
+                if dev.type == entry.peripheral and not dev.mounted then
+                    device.mount(dev.id, entry.path)
+                    break
+                end
+            end
+        end
+        log.info("kernel", "Stage 3.5: Processed " .. tostring(#fstab.devices) .. " fstab device mounts")
+    end
+end
 
 -- Stage 4: Start background services.
 -- discoverd makes this host visible on the network to other SXOS machines.
@@ -94,6 +115,7 @@ shell_env.sx_proc        = proc
 shell_env.sx_events      = events
 shell_env.sx_service     = svc
 shell_env.sx_log         = log
+shell_env.peripheral     = load_lib("/lib/compat/peripheral.lua")
 
 if system_config.enable_vfs then
     local sx_perms = load_lib("/lib/sx/vfs.lua")

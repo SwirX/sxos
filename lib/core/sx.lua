@@ -62,6 +62,13 @@ sx.net = setmetatable({}, {
     end
 })
 
+-- sx.device: centralized device registry APIs
+sx.device = setmetatable({}, {
+    __index = function(_, key)
+        return require_internal("/lib/core/device.lua")[key]
+    end
+})
+
 -- sx.pkg: package management operations
 sx.pkg = setmetatable({}, {
     __index = function(_, key)

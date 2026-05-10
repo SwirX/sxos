@@ -136,20 +136,19 @@ end
 
 -- -----------------------------------------------------------------------
 -- devfs: peripheral device nodes under /dev
--- Accessing /dev/<name> returns a thin wrapper over peripheral.wrap(name).
--- The node name maps to a peripheral name by stripping the /dev/ prefix.
+-- Routes Virtual File System commands to dynamically mounted devices
+-- tracked in the SXOS Device Registry instead of raw peripheral wrap.
 -- -----------------------------------------------------------------------
 local devfs = {}
-
-local function dev_peripheral_name(dev_path)
-    -- /dev/speaker0 -> "speaker0"
-    return string.match(dev_path, "^/dev/(.+)$")
-end
+local current_device_registry = nil
 
 function devfs.exists(dev_path)
-    local pname = dev_peripheral_name(dev_path)
-    if not pname then return pname == nil and dev_path == "/dev" end
-    return peripheral.isPresent(pname)
+    if dev_path == "/dev" then return true end
+    if not current_device_registry then return false end
+    for _, dev in pairs(current_device_registry.get_all()) do
+        if dev.mounted and dev.mountpoint == dev_path then return true end
+    end
+    return false
 end
 
 function devfs.isDir(dev_path)
@@ -158,21 +157,32 @@ end
 
 function devfs.list(dev_path)
     if dev_path ~= "/dev" then return nil end
-    return peripheral.getNames()
+    local items = {}
+    if current_device_registry then
+        for _, dev in pairs(current_device_registry.get_all()) do
+            if dev.mounted and dev.mountpoint then
+                local basename = string.match(dev.mountpoint, "^.*/([^/]+)$") or dev.mountpoint
+                table.insert(items, basename)
+            end
+        end
+    end
+    return items
 end
 
--- open() on a /dev node returns the peripheral API table directly,
--- wrapped in a table with the standard handle interface for reads/writes.
--- Callers should check for peripheral-specific methods via handle.native.
 function devfs.open(dev_path, _mode)
-    local pname = dev_peripheral_name(dev_path)
-    if not pname then return nil, "cannot open /dev as a file" end
-    local wrapped = peripheral.wrap(pname)
-    if not wrapped then
-        return nil, "device not present: " .. pname
+    if dev_path == "/dev" then return nil, "cannot open /dev as a file" end
+    if not current_device_registry then return nil, "device registry not initialized" end
+
+    for _, dev in pairs(current_device_registry.get_all()) do
+        if dev.mounted and dev.mountpoint == dev_path then
+            local instance = current_device_registry.open(dev.id)
+            if not instance then return nil, "driver failed to open device" end
+            -- VFS handles expect typical close()
+            instance.close = instance.close or function() end
+            return instance
+        end
     end
-    -- Expose the peripheral API as the handle's native table.
-    return { native = wrapped, close = function() end }
+    return nil, "no device mounted at " .. dev_path
 end
 
 -- -----------------------------------------------------------------------
@@ -213,7 +223,8 @@ end
 
 -- Mount devfs and netfs at their canonical prefixes.
 -- This is called by the kernel at Stage 3 (Mounting).
-function vfs.mount_builtin_drivers()
+function vfs.mount_builtin_drivers(device_registry)
+    current_device_registry = device_registry
     vfs.mount("/dev", devfs)
     vfs.mount("/net", netfs)
     log_module.info("vfs", "built-in drivers mounted")
