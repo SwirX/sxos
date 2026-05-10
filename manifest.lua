@@ -105,10 +105,7 @@ return {
         { path = "/bin/wget.lua",                      source = "bin/wget.lua",                     executable = true },
         { path = "/bin/which.lua",                     source = "bin/which.lua",                    executable = true },
 
-        -- User binaries
-        { path = "/usr/bin/sxfetch.lua",               source = "usr/bin/sxfetch.lua",              executable = true },
-        { path = "/usr/bin/yafe.lua",                  source = "usr/bin/yafe.lua",                 executable = true },
-        { path = "/usr/bin/yate.lua",                  source = "usr/bin/yate.lua",                 executable = true },
+        -- User binaries moved to standalone packages
     },
 
     lifecycle = {

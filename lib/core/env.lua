@@ -76,7 +76,9 @@ function env.create_process_env(parent_env, initial_vars)
 
     local core_path = "/lib/?.lua;/lib/?/init.lua;?;?.lua"
     local final_path = core_path
-    if parent_env.package and parent_env.package.path then
+    if process_env.ENV and process_env.ENV.LUA_PATH then
+        final_path = core_path .. ";" .. process_env.ENV.LUA_PATH
+    elseif parent_env.package and parent_env.package.path then
         final_path = core_path .. ";" .. parent_env.package.path
     end
 
