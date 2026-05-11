@@ -14,6 +14,11 @@ write("\nEnable Virtual Filesystem (VFS) to enforce file permissions/ownership s
 local vfsChoice = read()
 local enableVFS = (vfsChoice == "" or vfsChoice:lower() == "y")
 
+print("\nSelect installation type:")
+print(" 1. Minimal (only bsh shell)")
+print(" 2. Full Desktop (sxos-desktop, coreutils, devtools, netutils)")
+write("Choice [2]: ")
+local inst_type = read()
 print("\nCreating directories...")
 local dirs = { "/bin", "/etc", "/home", "/lib", "/root", "/tmp", "/usr/bin", "/usr/lib", "/var", "/.config", "/etc/sxpm",
     "/var/lib/sxpm", "/var/cache/sxpm", "/usr/lib/sxpm" }
@@ -66,6 +71,18 @@ local config = {
     enable_vfs = enableVFS
 }
 saveFile("/etc/sxos/config.lua", config)
+
+if inst_type == "1" then
+    print("\nMinimal installation selected.")
+    print("Only the system core and bsh shell will be provided.")
+    print("You must install other packages via sxpm manually.")
+else
+    print("\nInstalling Full Desktop environment & utilities...")
+    shell.run("/bin/sxpm.lua", "install", "sxos-desktop")
+    shell.run("/bin/sxpm.lua", "install", "sx-coreutils")
+    shell.run("/bin/sxpm.lua", "install", "sx-devtools")
+    shell.run("/bin/sxpm.lua", "install", "sx-netutils")
+end
 
 print("\n------------------------------")
 print("INSTALLATION COMPLETE")

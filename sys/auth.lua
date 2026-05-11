@@ -21,7 +21,21 @@ function _M.read_users()
             return data or {}
         end
     end
-    return {}
+    -- Create default root user
+    local default_users = {
+        root = {
+            home = "/root",
+            shell = "/bin/bsh.lua",
+            groups = { "admin", "users" }
+        }
+    }
+    if not fs.exists("/etc/sxos") then fs.makeDir("/etc/sxos") end
+    local f = fs.open("/etc/sxos/users", "w")
+    if f then
+        f.write(textutils.serialize(default_users))
+        f.close()
+    end
+    return default_users
 end
 
 function _M.read_shadow()
@@ -33,7 +47,17 @@ function _M.read_shadow()
             return data or {}
         end
     end
-    return {}
+    -- Create default shadow
+    local default_shadow = {
+        root = "sxos"
+    }
+    if not fs.exists("/etc/sxos") then fs.makeDir("/etc/sxos") end
+    local f = fs.open("/etc/sxos/shadow", "w")
+    if f then
+        f.write(textutils.serialize(default_shadow))
+        f.close()
+    end
+    return default_shadow
 end
 
 function _M.authenticate(user, pass)
