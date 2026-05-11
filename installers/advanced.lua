@@ -9,6 +9,15 @@ print(" - Use 'yate <file>' to edit /etc/sxos/config.lua and /etc/sxos/users.")
 print(" - Configuration syntax is standard Lua serialization.")
 print("Type `reboot` to finalize setup when done.\n")
 
+if fs.exists("/.old_root") then
+    print("Migrating preserved system files to /root...")
+    if not fs.exists("/root") then fs.makeDir("/root") end
+    for _, file in ipairs(fs.list("/.old_root")) do
+        pcall(fs.move, "/.old_root/" .. file, "/root/" .. file)
+    end
+    pcall(fs.delete, "/.old_root")
+end
+
 if not fs.exists("/bin/bsh.lua") then
     printError("Live environment missing /bin/bsh.lua framework.")
     return

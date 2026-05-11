@@ -24,6 +24,14 @@ end
 print("Setting up user space...")
 fs.makeDir("/home/" .. username)
 
+if fs.exists("/.old_root") then
+    print("Migrating preserved system files...")
+    for _, file in ipairs(fs.list("/.old_root")) do
+        pcall(fs.move, "/.old_root/" .. file, "/home/" .. username .. "/" .. file)
+    end
+    pcall(fs.delete, "/.old_root")
+end
+
 local shadow = {}
 local users = {}
 local autoLogin = false

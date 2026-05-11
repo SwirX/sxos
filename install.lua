@@ -54,17 +54,39 @@ if sxos_input == "2" or sxos_input == "dev" then
     sxos_branch = "dev"
 end
 
+print("")
+write("Format entire computer before installation? (y/n) [n]: ")
+local format_input = read()
+local do_format = (format_input == "y" or format_input == "Y")
+
+if do_format then
+    print("\nFormatting...")
+    for _, file in ipairs(fs.list("/")) do
+        if file ~= "install.lua" and file ~= "sxpm" then
+            shell.run("rm", file)
+        end
+    end
+else
+    print("\nPreserving root files...")
+    if not fs.exists("/.old_root") then fs.makeDir("/.old_root") end
+    for _, file in ipairs(fs.list("/")) do
+        if file ~= "install.lua" and file ~= "sxpm" and file ~= "rom" and file ~= ".old_root" then
+            pcall(fs.move, "/" .. file, "/.old_root/" .. file)
+        end
+    end
+end
+
 -- Setup URLs based on channels
 local SXPM_BOOTSTRAP_URL   = "https://raw.githubusercontent.com/SwirX/sxpm/" .. sxpm_branch .. "/src/bin/sxpm.lua"
 local SXPM_LIBS            = {
     ["lib/pkg/manifest.lua"] = "https://raw.githubusercontent.com/SwirX/sxpm/" ..
-    sxpm_branch .. "/src/lib/pkg/manifest.lua",
+        sxpm_branch .. "/src/lib/pkg/manifest.lua",
     ["lib/pkg/database.lua"] = "https://raw.githubusercontent.com/SwirX/sxpm/" ..
-    sxpm_branch .. "/src/lib/pkg/database.lua",
+        sxpm_branch .. "/src/lib/pkg/database.lua",
     ["lib/pkg/resolve.lua"]  = "https://raw.githubusercontent.com/SwirX/sxpm/" ..
-    sxpm_branch .. "/src/lib/pkg/resolve.lua",
+        sxpm_branch .. "/src/lib/pkg/resolve.lua",
     ["lib/pkg/archive.lua"]  = "https://raw.githubusercontent.com/SwirX/sxpm/" ..
-    sxpm_branch .. "/src/lib/pkg/archive.lua",
+        sxpm_branch .. "/src/lib/pkg/archive.lua",
 }
 local REPO_INDEX_URL       = "https://raw.githubusercontent.com/SwirX/sxpm-repo/" .. sxos_branch .. "/index.json"
 local EASY_INSTALL_URL     = "https://raw.githubusercontent.com/SwirX/sxos/" .. sxos_branch .. "/installers/easy.lua"
