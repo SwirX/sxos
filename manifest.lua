@@ -1,84 +1,66 @@
 -- manifest.lua
--- Package manifest for sxos-core.
--- This is the canonical descriptor for the SXOS core operating system package.
--- It is consumed by sxpm to install, upgrade, and remove the OS.
+-- Package manifest for sx-coreutils.
+-- Core UNIX-style utilities required by SXOS userspace.
 
 return {
     format = "sxpkg-1",
 
     meta = {
         name         = "sxos-core",
-        version      = "2.3.0",
+        version      = "2.3.1",
         author       = "SwirX",
-        description  = "SXOS - core operating system for ComputerCraft",
+        description  = "Core filesystem and shell utilities for SXOS",
         channel      = "stable",
         package_type = "system",
     },
 
-    dependencies = {},
+    dependencies = {
+        "sxos-core",
+    },
 
     files = {
-        -- Bootloader
-        { path = "/boot/loader.lua",                   source = "boot/loader.lua" },
+        -- Core filesystem navigation
+        { path = "/bin/cd.lua",     source = "bin/cd.lua",     executable = true },
+        { path = "/bin/pwd.lua",    source = "bin/pwd.lua",    executable = true },
+        { path = "/bin/ls.lua",     source = "bin/ls.lua",     executable = true },
 
-        -- Fallback Simple Shell
-        { path = "/bin/sh.lua",                        source = "bin/sh.lua" },
+        -- File inspection
+        { path = "/bin/cat.lua",    source = "bin/cat.lua",    executable = true },
+        { path = "/bin/find.lua",   source = "bin/find.lua",   executable = true },
+        { path = "/bin/which.lua",  source = "bin/which.lua",  executable = true },
 
-        -- Startup dispatcher
-        { path = "/startup.lua",                       source = "startup.lua" },
+        -- File manipulation
+        { path = "/bin/touch.lua",  source = "bin/touch.lua",  executable = true },
+        { path = "/bin/mkdir.lua",  source = "bin/mkdir.lua",  executable = true },
+        { path = "/bin/mkcd.lua",   source = "bin/mkcd.lua",   executable = true },
+        { path = "/bin/rm.lua",     source = "bin/rm.lua",     executable = true },
+        { path = "/bin/cp.lua",     source = "bin/cp.lua",     executable = true },
+        { path = "/bin/mv.lua",     source = "bin/mv.lua",     executable = true },
+        { path = "/bin/ln.lua",     source = "bin/ln.lua",     executable = true },
 
-        -- System skeleton config
-        { path = "/etc/skel/config/sxboot/config.lua", source = "etc/skel/config/sxboot/config.lua" },
+        -- Text utilities
+        { path = "/bin/echo.lua",   source = "bin/echo.lua",   executable = true },
+        { path = "/bin/printf.lua", source = "bin/printf.lua", executable = true },
+        { path = "/bin/grep.lua",   source = "bin/grep.lua",   executable = true },
+        { path = "/bin/diff.lua",   source = "bin/diff.lua",   executable = true },
 
-        -- Kernel and core sys
-        { path = "/sys/kernel.lua",                    source = "sys/kernel.lua" },
-        { path = "/sys/env.lua",                       source = "sys/env.lua" },
-        { path = "/sys/auth.lua",                      source = "sys/auth.lua" },
+        -- Environment + shell helpers
+        { path = "/bin/env.lua",    source = "bin/env.lua",    executable = true },
+        { path = "/bin/clear.lua",  source = "bin/clear.lua",  executable = true },
 
-        -- Core libraries
-        { path = "/lib/core/log.lua",                  source = "lib/core/log.lua" },
-        { path = "/lib/core/env.lua",                  source = "lib/core/env.lua" },
-        { path = "/lib/core/events.lua",               source = "lib/core/events.lua" },
-        { path = "/lib/core/process.lua",              source = "lib/core/process.lua" },
-        { path = "/lib/core/service.lua",              source = "lib/core/service.lua" },
-        { path = "/lib/core/sx.lua",                   source = "lib/core/sx.lua" },
-        { path = "/lib/core/device.lua",               source = "lib/core/device.lua" },
+        -- Mounting + filesystem management
+        { path = "/bin/mount.lua",  source = "bin/mount.lua",  executable = true },
+        { path = "/bin/umount.lua", source = "bin/umount.lua", executable = true },
 
-        -- Compatibility shims
-        { path = "/lib/compat/peripheral.lua",         source = "lib/compat/peripheral.lua" },
+        -- Permissions
+        { path = "/bin/chmod.lua",  source = "bin/chmod.lua",  executable = true },
+        { path = "/bin/chown.lua",  source = "bin/chown.lua",  executable = true },
 
-        -- Filesystem libraries
-        { path = "/lib/fs/vfs.lua",                    source = "lib/fs/vfs.lua" },
-        { path = "/lib/fs/path.lua",                   source = "lib/fs/path.lua" },
-        { path = "/lib/fs/permissions.lua",            source = "lib/fs/permissions.lua" },
-
-        -- Shell libraries extracted to bsh package
-
-        -- Network libraries
-        { path = "/lib/net/discovery.lua",             source = "lib/net/discovery.lua" },
-        { path = "/lib/net/rednet.lua",                source = "lib/net/rednet.lua" },
-
-        -- SX config + VFS shim
-        { path = "/lib/sx/config.lua",                 source = "lib/sx/config.lua" },
-        { path = "/lib/sx/vfs.lua",                    source = "lib/sx/vfs.lua" },
-
-        -- Device Driver Backends
-        { path = "/lib/devices/generic.lua",           source = "lib/devices/generic.lua" },
-        { path = "/lib/devices/speaker.lua",           source = "lib/devices/speaker.lua" },
-
-        -- Fstab configurations
-        { path = "/etc/sxos/fstab.lua",                source = "etc/fstab.lua" },
-
-        -- UI library
-        { path = "/lib/ui/theme.lua",                  source = "lib/ui/theme.lua" },
-
-        -- Services
-        { path = "/services/discoverd.lua",            source = "services/discoverd.lua" },
+        -- Lua userspace
+        { path = "/bin/lua.lua",    source = "bin/lua.lua",    executable = true },
     },
 
-    lifecycle = {
-        post_install = "scripts/post_install.lua",
-    },
+    lifecycle = {},
 
     integrity = {
         sha256 = "",
