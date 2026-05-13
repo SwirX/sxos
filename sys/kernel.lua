@@ -129,44 +129,15 @@ local shell_path = userinfo.shell or "/bin/bsh.lua"
 local shell_fn
 if not fs.exists(shell_path) then
     log.warn("kernel", "Stage 6: shell '" .. shell_path .. "' not found. Launching fallback TTY shell.")
-    shell_fn = function()
-        while true do
-            term.setTextColor(colors.green)
-            write(shell_env.USER .. "@sxos")
-            term.setTextColor(colors.white)
-            write(":/$ ")
-            local input = read()
-            if input and input ~= "" then
-                local words = {}
-                for w in input:gmatch("%S+") do table.insert(words, w) end
-                local prog = table.remove(words, 1)
-
-                local resolved
-                for _, path in ipairs({ "/bin/", "/usr/bin/", "" }) do
-                    for _, ext in ipairs({ ".lua", "" }) do
-                        local candidate = path .. prog .. ext
-                        if fs.exists(candidate) and not fs.isDir(candidate) then
-                            resolved = candidate
-                            break
-                        end
-                    end
-                    if resolved then break end
-                end
-
-                if resolved then
-                    local fn, err = loadfile(resolved, "t", _ENV)
-                    if fn then
-                        local ok, run_err = pcall(fn, table.unpack(words))
-                        if not ok then printError(run_err) end
-                    else
-                        printError("Failed to load: " .. err)
-                    end
-                else
-                    printError(prog .. ": command not found")
-                end
-            end
-        end
+    shell_path = "/bin/sh.lua"
+    if not fs.exists(shell_path) then
+        log.fatal("kernel", "Stage 6: Fallback shell missing!")
     end
+    local fn, load_err = loadfile(shell_path, "t", shell_env)
+    if not fn then
+        log.fatal("kernel", "Stage 6: failed to load shell: " .. tostring(load_err))
+    end
+    shell_fn = fn
 else
     local fn, load_err = loadfile(shell_path, "t", shell_env)
     if not fn then

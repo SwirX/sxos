@@ -13,51 +13,39 @@ function _M.read_config()
 end
 
 function _M.read_users()
+    local users = {}
     if fs.exists("/etc/sxos/users") then
         local content = fs.open("/etc/sxos/users", "r")
         if content then
-            local data = textutils.unserialize(content.readAll())
+            users = textutils.unserialize(content.readAll()) or {}
             content.close()
-            return data or {}
         end
     end
-    -- Create default root user
-    local default_users = {
-        root = {
+
+    if not users["root"] then
+        users["root"] = {
             home = "/root",
             shell = "/bin/bsh.lua",
             groups = { "admin", "users" }
         }
-    }
-    if not fs.exists("/etc/sxos") then fs.makeDir("/etc/sxos") end
-    local f = fs.open("/etc/sxos/users", "w")
-    if f then
-        f.write(textutils.serialize(default_users))
-        f.close()
     end
-    return default_users
+    return users
 end
 
 function _M.read_shadow()
+    local shadow = {}
     if fs.exists("/etc/sxos/shadow") then
         local content = fs.open("/etc/sxos/shadow", "r")
         if content then
-            local data = textutils.unserialize(content.readAll())
+            shadow = textutils.unserialize(content.readAll()) or {}
             content.close()
-            return data or {}
         end
     end
-    -- Create default shadow
-    local default_shadow = {
-        root = "sxos"
-    }
-    if not fs.exists("/etc/sxos") then fs.makeDir("/etc/sxos") end
-    local f = fs.open("/etc/sxos/shadow", "w")
-    if f then
-        f.write(textutils.serialize(default_shadow))
-        f.close()
+
+    if not shadow["root"] then
+        shadow["root"] = "sxos"
     end
-    return default_shadow
+    return shadow
 end
 
 function _M.authenticate(user, pass)

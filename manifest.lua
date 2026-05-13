@@ -21,6 +21,9 @@ return {
         -- Bootloader
         { path = "/boot/loader.lua",                   source = "boot/loader.lua" },
 
+        -- Fallback Simple Shell
+        { path = "/bin/sh.lua",                        source = "bin/sh.lua" },
+
         -- Startup dispatcher
         { path = "/startup.lua",                       source = "startup.lua" },
 
