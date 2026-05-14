@@ -14,9 +14,7 @@ return {
         package_type = "system",
     },
 
-    dependencies = {
-        "sxos-core",
-    },
+    dependencies = {},
 
     files = {
         -- Core filesystem navigation
